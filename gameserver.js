@@ -51,7 +51,7 @@ server.prototype.selectHero = function(playerName, heroName) {
 };
 
 server.prototype.isSelecting = function() {
-	if (this.count < 2) return true;
+	if (this.count < 1) return true;
 	for(var name in this.players)
 		if (!this.players[name].hasSelectedHero())
 			return true;	
@@ -106,7 +106,7 @@ server.prototype.gameLoop = function(game) {
 
 
 	var timeSinceLastUpdate = new Date() - g.lastUpdate;
-	if (timeSinceLastUpdate > 300) {
+	if (timeSinceLastUpdate > 100) {
 		g.lastUpdate = +new Date();
 		var state = g.getWorldState();
 		for(var name in this.players) {
@@ -115,7 +115,7 @@ server.prototype.gameLoop = function(game) {
 	}
 
 	if (!g.finished) {
-		setTimeout(function(){g.gameLoop.call(g, g);}, 30);
+		setTimeout(function(){g.gameLoop.call(g, g);}, 10);
 	} 
 	else {
 		g.finishGame();

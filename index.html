@@ -3,17 +3,24 @@
   <head>
     <title>Dota 2</title>
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; }
-      body { font: 13px Helvetica, Arial; }
-      .player { border: solid 1px gray; width: 36px; height: 36px; border-radius: 18px; position: absolute; }
+      * { margin: 0; padding: 0; box-sizing: border-box;  }
+      body { font: 13px Helvetica, Arial; overflow: scroll;}
+      .player { border: solid 1px gray; width: 80px; height: 80px; border-radius: 40px; position: absolute; }
       .player .health { position: absolute; bottom: -6px; height: 4px; width: 100%; background: #00FF00; }
-      .player .name { position: absolute; top: -20px; text-align: center; height: 20px; width: 100%; }
+      .player .name { position: absolute; top: -20px; text-align: center; height: 20px; width: 100%; color: white; }
       #map {
         position: absolute;
-        width: 12000px;
-        height: 8000px;
+        width: 10174px;
+        height: 9832px;
         background: #f0fff0;
         display: none;
+        background: url(/img/fullmap.jpg);
+        background-size: 100% auto; 
+      }
+      #fullmap {
+        position: absolute;
+        width: 10174px;
+        height: 9832px;
       }
       #blinker {
         position: absolute;
@@ -243,6 +250,7 @@
 </head>
 <body>
   <div id='map'>
+    <img src='/img/fullmap.jpg' id='fullmap' width='10174' height='9832' /> 
     <div id="players">
     </div>
     <div id='blinker'>
