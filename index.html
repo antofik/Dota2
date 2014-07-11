@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Dota 2</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      .player { border: solid 1px gray; width: 36px; height: 36px; border-radius: 18px; position: absolute; }
+      #player1 { background: blue; }
+      #player2 { background: orange; left: 1000px;top: 100px; }
+      #map {
+        position: absolute;
+        width: 12000px;
+        height: 8000px;
+        background: #f0fff0;
+      }
+      #blinker {
+        position: absolute;
+        width:40px;
+        height:40px;
+        margin: -20px;
+        display:absolute;        
+        opacity: 0;
+        pointer-events: none;
+      }      
+      #blinker .ani {        
+        border-radius: 5px;
+        border: solid 2px red;
+        margin: auto;
+        width: 10px;
+        height: 10px;
+        background: rgba(255,0,0,0.2);
+      }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+<script>
+  var socket = io();
+  $('form').submit(function(){
+    socket.emit('chat message', $('#m').val());
+    $('#m').val('');
+    return false;
+  });
+  $(function(){
+      var blinker = $('#blinker');
+      var blinkerAni = $('#blinker .ani');
+      $("#map").bind("contextmenu",function(e){      
+        blinkerAni.stop();
+        blinker.css('opacity', 1);
+        blinker.css('left', e.clientX + 'px');
+        blinker.css('top', e.clientY + 'px');
+        blinkerAni.css('width', '10px');
+        blinkerAni.css('height', '10px');
+        blinkerAni.css('opacity', 1);
+        blinkerAni.css('border-radius', '5px');        
+        $('#blinker .ani').animate({
+            width: '30px',
+            height: '30px',
+            'border-radius': '15px'
+        }, 50);
+        $('#blinker .ani').animate({
+            opacity: 0
+        }, 100);
+        
+        socket.emit('move', {name:'player1', x: e.clientX, y: e.clientY});
+        
+        return false;
+      }); 
+  
+      var player1 = $('#player1');
+      var player2 = $('#player2');
+      socket.on('position', function(msg){
+        player1.stop();
+        player2.stop();
+
+        //player1.css({left: msg.player1.x + 'px', top: msg.player1.y + 'px'});
+        //player2.css({left: msg.player2.x + 'px', top: msg.player2.y + 'px'});        
+
+        player1.animate({
+            left: (msg.player1.x + msg.player1.vx) + 'px',
+            top: (msg.player1.y + msg.player1.vy) + 'px',
+        }, 1000, 'linear');
+        player2.animate({
+            left: (msg.player2.x + msg.player2.vx) + 'px',
+            top: (msg.player2.y + msg.player2.vy) + 'px',
+        }, 1000, 'linear');
+      });
+  });
+</script>
+  </head>
+  <body>
+  <div id='map'>
+    <div id='player1' class='player'></div>
+    <div id='player2' class='player'></div>
+    <div id='blinker'>
+        <div class='ani'></div>
+    </div>
+  </div>
+  </body>
+</html>
