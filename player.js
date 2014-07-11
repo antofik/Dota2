@@ -13,6 +13,7 @@ var player = function(name, socket) {
     this.hero = null;
     this.maxHealth = 100;
     this.health = this.maxHealth;
+    this.radius = 20;
 
     var that = this;
     socket.on('move', function(e){        
@@ -22,13 +23,30 @@ var player = function(name, socket) {
 };
 exports.constructor = player;
 
-player.prototype.update = function(time) {
-    this.x += this.vx * time;   
-    this.y += this.vy * time;
+player.prototype.distanceTo = function(obj) {
+    var dx = this.x - obj.x;
+    var dy = this.y - obj.y;
+    return Math.sqrt(dx*dx + dy*dy);
+}
+
+player.prototype.update = function(time, g) {
+    var x = this.x + this.vx * time;
+    var y = this.y + this.vy * time;
+
+    if (!g.isPassable(this, x, y)) {
+        if (g.isPassable(this, this.x, y))
+            this.y = y;
+        else if (g.isPassable(this, x, this.y))
+            this.x = x;
+    } else {
+        this.x = x;   
+        this.y = y;
+    }
+
     var dx = this.targetX - this.x;
     var dy = this.targetY - this.y;
     var distance = Math.sqrt(dx*dx + dy*dy);
-    if (!time) console.log('bad time', time);
+    
     var maxV = Math.min(this.maxV, distance/time);
     this.vx = distance > 1 ? maxV * dx / distance : 0;
     this.vy = distance > 1 ? maxV * dy / distance : 0;

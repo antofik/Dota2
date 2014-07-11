@@ -61,8 +61,8 @@ server.prototype.isSelecting = function() {
 server.prototype.placePlayers = function() {
 	for(var name in this.players) {
 		var player = this.players[name];
-		player.x = Math.floor(100 + 2000*Math.random());
-		player.y = Math.floor(100 + 1000*Math.random());
+		player.x = Math.floor(100 + 200*Math.random());
+		player.y = Math.floor(100 + 100*Math.random());
 		player.vx = 0;
 		player.vy = 0;
 		player.targetX = player.x;
@@ -79,6 +79,21 @@ server.prototype.getWorldState = function() {
 	return state;
 };
 
+server.prototype.isPassable = function(obj, x, y) {
+	var ok = true;
+
+	for(var name in this.players) {
+		var player = this.players[name];
+		if (player === obj) continue;
+		if (player.distanceTo(obj) < player.radius + obj.radius) {
+			ok = false;
+			break;
+		}
+	}
+
+	return ok;
+};
+
 server.prototype.gameLoop = function(game) {
 	var g = game;
     var delta = new Date() - g.time;
@@ -86,17 +101,21 @@ server.prototype.gameLoop = function(game) {
     delta /= 1000;
 
 	for(var name in this.players) {
-		this.players[name].update(delta);
+		this.players[name].update(delta, g);
 	}
 
-	var state = g.getWorldState();
 
-	for(var name in this.players) {
-		this.players[name].socket.emit('game state', g.getWorldState());
+	var timeSinceLastUpdate = new Date() - g.lastUpdate;
+	if (timeSinceLastUpdate > 300) {
+		g.lastUpdate = +new Date();
+		var state = g.getWorldState();
+		for(var name in this.players) {
+			this.players[name].socket.emit('game state', g.getWorldState());
+		}
 	}
 
 	if (!g.finished) {
-		setTimeout(function(){g.gameLoop.call(g, g);}, 300);
+		setTimeout(function(){g.gameLoop.call(g, g);}, 30);
 	} 
 	else {
 		g.finishGame();
@@ -122,6 +141,7 @@ server.prototype.start = function() {
 	}
 
 	var g = this;
+	g.lastUpdate = +new Date();
 	setTimeout(function() {
 		g.gameLoop(g)
 	}, 1000);
