@@ -6,8 +6,8 @@
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font: 13px Helvetica, Arial; }
       .player { border: solid 1px gray; width: 36px; height: 36px; border-radius: 18px; position: absolute; }
-      #player1 { background: blue; }
-      #player2 { background: orange; left: 1000px;top: 100px; }
+      .player .health { position: absolute; bottom: -6px; height: 4px; width: 100%; background: #00FF00; }
+      .player .name { position: absolute; top: -20px; text-align: center; height: 20px; width: 100%; }
       #map {
         position: absolute;
         width: 12000px;
@@ -201,8 +201,9 @@
   var playersUi = {};
 
   function createPlayerUi(player) {
-    $("#players").append("<div style='background:" + player.color + "' id='" + player.name + "' class='player'></div>");
+    $("#players").append("<div style='background:" + player.color + "' id='" + player.name + "' class='player'><div class='health'></div><div class='name'></div></div>");
     var ui = $("#" + player.name);
+    $('.name', ui).html(player.name);
     return ui;
   }
 

@@ -11,6 +11,8 @@ var player = function(name, socket) {
     this.targetX = 0;
     this.targetY = 0;
     this.hero = null;
+    this.maxHealth = 100;
+    this.health = this.maxHealth;
 
     var that = this;
     socket.on('move', function(e){        
@@ -49,6 +51,10 @@ player.prototype.toJson = function() {
         vx: this.vx,
         vy: this.vy,
         direction: this.direction, 
+        health: this.health,
+        maxHealth: this.maxHealth,
+
+        //to remove
         color: this.hero.color
     };
 };
