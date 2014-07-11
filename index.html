@@ -13,6 +13,7 @@
         width: 12000px;
         height: 8000px;
         background: #f0fff0;
+        display: none;
       }
       #blinker {
         position: absolute;
@@ -31,17 +32,146 @@
         height: 10px;
         background: rgba(255,0,0,0.2);
       }
+      #list_of_games {
+        display: none;
+        cursor: pointer;
+        margin: auto;
+        border: solid 30px transparent;
+        width: 300px;
+        font-size: 24px;
+      }
+      #list_of_games li {
+        cursor: pointer;
+        padding: 4px 16px;
+      }
+      #list_of_games li:hover {
+        background: rgba(0,0,0,0.2);
+      }
+      #list_of_games .new li {
+        color: green;
+      }
+      #list_of_games .select li {
+        color: blue;
+      }
+
+      #list_of_heroes {
+        display: none;
+        cursor: pointer;
+        margin: auto;
+        border: solid 30px transparent;
+        width: 300px;
+        font-size: 24px;
+      }
+
     </style>
     <script src="/socket.io/socket.io.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
 <script>
   var socket = io();
-  $('form').submit(function(){
-    socket.emit('chat message', $('#m').val());
-    $('#m').val('');
-    return false;
+  var name;
+
+  var states = {
+    new: 0,
+    select: 1,
+    play: 2
+  };
+
+  function getState() {
+    return localStorage.getItem('state') || 0;
+  }
+
+  function setState(state) {
+    localStorage.setItem('state', state);
+  }
+
+  function getPlayerName() {
+    name = localStorage.getItem('name');
+    while (!name || name === "null")
+      name = prompt('Enter your login');
+    localStorage.setItem('name', name);
+    socket.emit('name', name);
+  }
+
+  socket.on("start", function(){
+    setHandlers();    
+    var state = getState();
+    if (state === states.new) {
+      showAvailableTournaments();
+    } else if (state === states.select) {
+      showHeroSelection();
+    } 
   });
-  $(function(){
+
+  function start() {
+    getPlayerName();
+  }
+
+  socket.on('list of games', function(games) {
+    var ul = $("#list_of_games ul.select");
+    ul.html('');
+    for(var i=0;i<games.length;i++) {
+      var game = games[i];
+      ul.append('<li>' + game.name + '</li>');
+    }
+    $('#list_of_games ul.select li').click(function(e){
+      var name = $(this).html();
+      socket.emit('select game', name);
+    });
+  });
+
+  socket.on('list of heroes', function(list) {
+    showHeroSelection(list);
+  });
+
+  socket.on('create world', function(state){
+    showGame(state);
+  });
+
+  function setHandlers() {
+    $('#list_of_games ul.new li').click(function(e){
+      socket.emit('create game');        
+    });
+  }
+
+
+  function hide() {
+    $("#map").hide();
+    $("#list_of_games").hide();
+    $("#list_of_heroes").hide();
+  }
+
+  var timer;
+
+  function showAvailableTournaments() {
+    clearTimeout(timer);
+    hide();
+    $("#list_of_games").show();
+
+    timer = setInterval(function() {
+      socket.emit('get games'); 
+    }, 1000);    
+  }
+
+  function showHeroSelection(list) {
+    var heroes = list.heroes;
+    clearTimeout(timer);
+    hide();
+    $("#list_of_heroes").show();
+
+    var ul = $("#list_of_heroes ul");
+    ul.html('');
+    for(var i=0;i<heroes.length;i++) {
+      var hero = heroes[i];
+      ul.append('<li data-name="' + hero.name + '"">' + hero.name + ' - ' + (hero.player || 'free') + '</li>');
+    }
+    $('#list_of_heroes li').click(function(e){
+      var name = $(this).data('name');
+      socket.emit('select hero', name);
+    });
+  }
+
+  function startControls() {
+      /************************* right click *******************/
       var blinker = $('#blinker');
       var blinkerAni = $('#blinker .ani');
       $("#map").bind("contextmenu",function(e){      
@@ -62,39 +192,75 @@
             opacity: 0
         }, 100);
         
-        socket.emit('move', {name:'player1', x: e.clientX, y: e.clientY});
+        socket.emit('move', {x: e.clientX, y: e.clientY});
         
         return false;
       }); 
+  }
+
+  var playersUi = {};
+
+  function createPlayerUi(player) {
+    $("#players").append("<div style='background:" + player.color + "' id='" + player.name + "' class='player'></div>");
+    var ui = $("#" + player.name);
+    return ui;
+  }
+
+  function showGame(state) {
+      clearTimeout(timer);
+      hide();
+      $("#map").show();
+
+      startControls();
   
+      var players = state.players;
+      for(var name in players) {
+          playersUi[name] = createPlayerUi(players[name]);
+      }
       var player1 = $('#player1');
       var player2 = $('#player2');
-      socket.on('position', function(msg){
-        player1.stop();
-        player2.stop();
-
-        //player1.css({left: msg.player1.x + 'px', top: msg.player1.y + 'px'});
-        //player2.css({left: msg.player2.x + 'px', top: msg.player2.y + 'px'});        
-
-        player1.animate({
-            left: (msg.player1.x + msg.player1.vx) + 'px',
-            top: (msg.player1.y + msg.player1.vy) + 'px',
-        }, 1000, 'linear');
-        player2.animate({
-            left: (msg.player2.x + msg.player2.vx) + 'px',
-            top: (msg.player2.y + msg.player2.vy) + 'px',
-        }, 1000, 'linear');
+      socket.on('game state', function(state){
+        var players = state.players;
+        for(var name in players) {
+          var player = players[name];
+          var ui = playersUi[name];
+          ui.stop();
+          /*ui.css({
+              left: (player.x) + 'px',
+              top: (player.y) + 'px',
+          }); */
+          ui.animate({
+              left: (player.x + player.vx) + 'px',
+              top: (player.y + player.vy) + 'px',
+          }, 1000, 'linear');
+        }
       });
-  });
+  }
+
+  $(start);
 </script>
-  </head>
-  <body>
+</head>
+<body>
   <div id='map'>
-    <div id='player1' class='player'></div>
-    <div id='player2' class='player'></div>
+    <div id="players">
+    </div>
     <div id='blinker'>
         <div class='ani'></div>
     </div>
   </div>
-  </body>
+
+  <div id='list_of_games'>
+    <ul class='new'>
+      <li>Create new game</li>
+    </ul>
+    <ul class='select'>
+    </ul>
+  </div>
+
+  <div id='list_of_heroes'>
+    <ul>
+    </ul>
+  </div>
+
+</body>
 </html>

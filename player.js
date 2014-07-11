@@ -1,13 +1,22 @@
-var player = function(name) {
+var player = function(name, socket) {
     this.name = name;
+    this.socket = socket;
     this.x = 0;
     this.y = 0;
     this.vx = 0;
     this.vy = 0;
+    this.canMove = false;
     this.maxV = 100;
     this.direction = 0;
     this.targetX = 0;
     this.targetY = 0;
+    this.hero = null;
+
+    var that = this;
+    socket.on('move', function(e){        
+        that.targetX = e.x;
+        that.targetY = e.y;
+    });
 };
 exports.constructor = player;
 
@@ -23,6 +32,15 @@ player.prototype.update = function(time) {
     this.vy = distance > 1 ? maxV * dy / distance : 0;
 };
 
+player.prototype.selectHero = function(hero) {
+    this.hero = hero;
+    this.maxV = hero.speed;
+}
+
+player.prototype.hasSelectedHero = function() {
+    return !!this.hero;
+};
+
 player.prototype.toJson = function() {
     return {
         name: this.name,
@@ -30,6 +48,7 @@ player.prototype.toJson = function() {
         y: this.y,
         vx: this.vx,
         vy: this.vy,
-        direction: this.direction
+        direction: this.direction, 
+        color: this.hero.color
     };
 };

@@ -7,45 +7,66 @@ app.get('/', function(req, res){
 });
 
 var sockets = [];
+var games = {};
+var gameId = 1;
 
-io.on('connection', function(socket){
+GameServer = require('./gameserver.js').ctor;
+
+io.on('connection', function(_socket){
+  var socket = _socket;
   sockets.push(socket);
-  socket.on('move', function(e){
-    player1.targetX = e.x;
-    player1.targetY = e.y;
+
+  socket.on('create game', function(){
+    var name = "Game " + gameId++;
+    console.log("Creating new game", name);
+    var game = new GameServer(name);
+    games[name] = game;
+    socket.game = game;
+    selectHero(socket, name);
+  });
+  socket.on('select game', function(name){
+    if (name in games) {
+      socket.game = games[name];
+      selectHero(socket, name);
+    }
+  });
+  socket.on('name', function(name){
+    socket.playerName = name;
+    console.log("Player " + name + " connected");
+    socket.emit("start");
+  });
+  socket.on('get games', function(e){
+    var list = [];
+    for(var name in games)
+      list.push({name: name});
+    socket.emit("list of games", list);
+  });
+  socket.on('select hero', function(heroName){ 
+    console.log(socket.playerName, 'selecting', heroName + "!");
+    socket.game.selectHero(socket.playerName, heroName);
   });
 });
 
-var Player = require('./player.js');
-var player1 = new Player.constructor('player1');
-var player2 = new Player.constructor('player1');
-
-player1.x = 300;
-player1.y = 200;
-player1.vx = 0;
-player1.vy = 0;
-
-player2.x = 1000;
-player2.y = 800;
-
-var time = +new Date();
-var i = 0;
-setInterval(function(){
-    var delta = new Date() - time;
-    time += delta;
-    delta /= 1000;
-    
-    player1.update(delta);
-    player2.update(delta);
-
-    var positions = {
-        'player1': player1.toJson(),
-        'player2': player2.toJson()
-    };
-    if (++i % 3 === 0) 
-    io.emit('position', positions);
-}, 100);
+function selectHero(socket, gameName) {
+    console.log("All players should select a hero. Waiting...");    
+    var game = games[gameName];
+    game.addPlayer(socket.playerName, socket);
+    if (socket.waitingForHeroes) return;
+    socket.waitingForHeroes = true;
+    function waitForHeroes(){      
+      if (game.isSelecting()) {
+        socket.emit('list of heroes', game.listOfHeroes());
+        setTimeout(waitForHeroes, 1000);
+      } else {
+        socket.waitingForHeroes = false;
+        console.log(socket.playerName + ", game is starting!");
+        game.start();
+      }
+    }
+    waitForHeroes();
+}
 
 http.listen(3000, function(){
   console.log('listening on *:3000');
 });
+
