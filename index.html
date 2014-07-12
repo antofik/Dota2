@@ -1,275 +1,34 @@
 <!doctype html>
 <html>
-  <head>
-    <title>Dota 2</title>
-    <style>
-      * { margin: 0; padding: 0; box-sizing: border-box;  }
-      body { font: 13px Helvetica, Arial; overflow: scroll;}
-      .player { border: solid 1px gray; width: 80px; height: 80px; border-radius: 40px; position: absolute; }
-      .player .health { position: absolute; bottom: -6px; height: 4px; width: 100%; background: #00FF00; }
-      .player .name { position: absolute; top: -20px; text-align: center; height: 20px; width: 100%; color: white; }
-      #map {
-        position: absolute;
-        width: 10174px;
-        height: 9832px;
-        background: #f0fff0;
-        display: none;
-        background: url(/img/fullmap.jpg);
-        background-size: 100% auto; 
-      }
-      #fullmap {
-        position: absolute;
-        width: 10174px;
-        height: 9832px;
-      }
-      #blinker {
-        position: absolute;
-        width:40px;
-        height:40px;
-        margin: -20px;
-        display:absolute;        
-        opacity: 0;
-        pointer-events: none;
-      }      
-      #blinker .ani {        
-        border-radius: 5px;
-        border: solid 2px red;
-        margin: auto;
-        width: 10px;
-        height: 10px;
-        background: rgba(255,0,0,0.2);
-      }
-      #list_of_games {
-        display: none;
-        cursor: pointer;
-        margin: auto;
-        border: solid 30px transparent;
-        width: 300px;
-        font-size: 24px;
-      }
-      #list_of_games li {
-        cursor: pointer;
-        padding: 4px 16px;
-      }
-      #list_of_games li:hover {
-        background: rgba(0,0,0,0.2);
-      }
-      #list_of_games .new li {
-        color: green;
-      }
-      #list_of_games .select li {
-        color: blue;
-      }
-
-      #list_of_heroes {
-        display: none;
-        cursor: pointer;
-        margin: auto;
-        border: solid 30px transparent;
-        width: 300px;
-        font-size: 24px;
-      }
-
-    </style>
+<head>
+    <title>Dota 2 Online Alpha</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
-<script>
-  var socket = io();
-  var name;
-
-  var states = {
-    new: 0,
-    select: 1,
-    play: 2
-  };
-
-  function getState() {
-    return localStorage.getItem('state') || 0;
-  }
-
-  function setState(state) {
-    localStorage.setItem('state', state);
-  }
-
-  function getPlayerName() {
-    name = localStorage.getItem('name');
-    while (!name || name === "null")
-      name = prompt('Enter your login');
-    localStorage.setItem('name', name);
-    socket.emit('name', name);
-  }
-
-  socket.on("start", function(){
-    setHandlers();    
-    var state = getState();
-    if (state === states.new) {
-      showAvailableTournaments();
-    } else if (state === states.select) {
-      showHeroSelection();
-    } 
-  });
-
-  function start() {
-    getPlayerName();
-  }
-
-  socket.on('list of games', function(games) {
-    var ul = $("#list_of_games ul.select");
-    ul.html('');
-    for(var i=0;i<games.length;i++) {
-      var game = games[i];
-      ul.append('<li>' + game.name + '</li>');
-    }
-    $('#list_of_games ul.select li').click(function(e){
-      var name = $(this).html();
-      socket.emit('select game', name);
-    });
-  });
-
-  socket.on('list of heroes', function(list) {
-    showHeroSelection(list);
-  });
-
-  socket.on('create world', function(state){
-    showGame(state);
-  });
-
-  function setHandlers() {
-    $('#list_of_games ul.new li').click(function(e){
-      socket.emit('create game');        
-    });
-  }
-
-
-  function hide() {
-    $("#map").hide();
-    $("#list_of_games").hide();
-    $("#list_of_heroes").hide();
-  }
-
-  var timer;
-
-  function showAvailableTournaments() {
-    clearTimeout(timer);
-    hide();
-    $("#list_of_games").show();
-
-    timer = setInterval(function() {
-      socket.emit('get games'); 
-    }, 1000);    
-  }
-
-  function showHeroSelection(list) {
-    var heroes = list.heroes;
-    clearTimeout(timer);
-    hide();
-    $("#list_of_heroes").show();
-
-    var ul = $("#list_of_heroes ul");
-    ul.html('');
-    for(var i=0;i<heroes.length;i++) {
-      var hero = heroes[i];
-      ul.append('<li data-name="' + hero.name + '"">' + hero.name + ' - ' + (hero.player || 'free') + '</li>');
-    }
-    $('#list_of_heroes li').click(function(e){
-      var name = $(this).data('name');
-      socket.emit('select hero', name);
-    });
-  }
-
-  function startControls() {
-      /************************* right click *******************/
-      var blinker = $('#blinker');
-      var blinkerAni = $('#blinker .ani');
-      $("#map").bind("contextmenu",function(e){      
-        blinkerAni.stop();
-        blinker.css('opacity', 1);
-        blinker.css('left', e.clientX + 'px');
-        blinker.css('top', e.clientY + 'px');
-        blinkerAni.css('width', '10px');
-        blinkerAni.css('height', '10px');
-        blinkerAni.css('opacity', 1);
-        blinkerAni.css('border-radius', '5px');        
-        $('#blinker .ani').animate({
-            width: '30px',
-            height: '30px',
-            'border-radius': '15px'
-        }, 50);
-        $('#blinker .ani').animate({
-            opacity: 0
-        }, 100);
-        
-        socket.emit('move', {x: e.clientX, y: e.clientY});
-        
-        return false;
-      }); 
-  }
-
-  var playersUi = {};
-
-  function createPlayerUi(player) {
-    $("#players").append("<div style='background:" + player.color + "' id='" + player.name + "' class='player'><div class='health'></div><div class='name'></div></div>");
-    var ui = $("#" + player.name);
-    $('.name', ui).html(player.name);
-    return ui;
-  }
-
-  function showGame(state) {
-      clearTimeout(timer);
-      hide();
-      $("#map").show();
-
-      startControls();
-  
-      var players = state.players;
-      for(var name in players) {
-          playersUi[name] = createPlayerUi(players[name]);
-      }
-      var player1 = $('#player1');
-      var player2 = $('#player2');
-      socket.on('game state', function(state){
-        var players = state.players;
-        for(var name in players) {
-          var player = players[name];
-          var ui = playersUi[name];
-          ui.stop();
-          /*ui.css({
-              left: (player.x) + 'px',
-              top: (player.y) + 'px',
-          }); */
-          ui.animate({
-              left: (player.x + player.vx) + 'px',
-              top: (player.y + player.vy) + 'px',
-          }, 1000, 'linear');
-        }
-      });
-  }
-
-  $(start);
-</script>
+    <link rel="stylesheet" type="text/css" href="css/main.css" />
+    <script src="/js/main.js"></script>
 </head>
 <body>
-  <div id='map'>
-    <img src='/img/fullmap.jpg' id='fullmap' width='10174' height='9832' /> 
+<div id='map'>
+    <img src='/img/fullmap.jpg' id='fullmap' width='10174' height='9832' />
     <div id="players">
     </div>
     <div id='blinker'>
         <div class='ani'></div>
     </div>
-  </div>
+</div>
 
-  <div id='list_of_games'>
+<div id='list_of_games'>
     <ul class='new'>
-      <li>Create new game</li>
+        <li>Create new game</li>
     </ul>
     <ul class='select'>
     </ul>
-  </div>
+</div>
 
-  <div id='list_of_heroes'>
+<div id='list_of_heroes'>
     <ul>
     </ul>
-  </div>
+</div>
 
 </body>
 </html>

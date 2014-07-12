@@ -1,0 +1,66 @@
+* { margin: 0; padding: 0; box-sizing: border-box;  }
+body { font: 13px Helvetica, Arial; overflow: scroll;}
+.player { border: solid 1px gray; width: 80px; height: 80px; border-radius: 40px; position: absolute; }
+.player .health { position: absolute; bottom: -6px; height: 4px; width: 100%; background: #00FF00; }
+.player .name { position: absolute; top: -20px; text-align: center; height: 20px; width: 100%; color: white; }
+#map {
+    position: absolute;
+    width: 10174px;
+    height: 9832px;
+    background: #f0fff0;
+    display: none;
+    background: url(/img/fullmap.jpg);
+    background-size: 100% auto;
+}
+#fullmap {
+    position: absolute;
+    width: 10174px;
+    height: 9832px;
+}
+#blinker {
+    position: absolute;
+    width:40px;
+    height:40px;
+    margin: -20px;
+    display:absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+#blinker .ani {
+    border-radius: 5px;
+    border: solid 2px red;
+    margin: auto;
+    width: 10px;
+    height: 10px;
+    background: rgba(255,0,0,0.2);
+}
+#list_of_games {
+    display: none;
+    cursor: pointer;
+    margin: auto;
+    border: solid 30px transparent;
+    width: 300px;
+    font-size: 24px;
+}
+#list_of_games li {
+    cursor: pointer;
+    padding: 4px 16px;
+}
+#list_of_games li:hover {
+    background: rgba(0,0,0,0.2);
+}
+#list_of_games .new li {
+    color: green;
+}
+#list_of_games .select li {
+    color: blue;
+}
+
+#list_of_heroes {
+    display: none;
+    cursor: pointer;
+    margin: auto;
+    border: solid 30px transparent;
+    width: 300px;
+    font-size: 24px;
+}

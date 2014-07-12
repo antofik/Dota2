@@ -10,6 +10,7 @@ app.get('/', function(req, res){
 console.log('dirname', __dirname);
 app.use('/img', express.static(__dirname + '/img'));
 app.use('/js', express.static(__dirname + '/js'));
+app.use('/css', express.static(__dirname + '/css'));
 
 var sockets = [];
 var games = {};
