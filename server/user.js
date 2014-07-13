@@ -8,16 +8,19 @@ define([
 
     var user = function() {
         this.id = userId++; //pseudo-unique user id
+        console.log("New user connected", this.id);
     };
 
     user.prototype.initialize = function(socket) {
         this.socket = socket;
-        this.on = socket.on;
-        this.emit = socket.emit;
+        this.socket.error(function(){
+           console.log('########error################');
+        });
     };
 
     user.prototype.dispose = function() {
         delete this.socket;
+        console.log("User disconnected", this.id);
     };
 
     function selectHero(socket, gameName) {
@@ -53,34 +56,36 @@ define([
     setInterval(removeInactiveGames, 100);
 
     user.prototype.serve = function() {
-        this.on('create game', function(){
+        var socket = this.socket;
+        socket.on('create game', function(){
             var gameName = "Game " + gameId++;
             console.log("Creating new game", gameName);
             var game = new GameServer(gameName);
             games[gameName] = game;
-            this.socket.game = game;
-            selectHero(this.socket, gameName);
+            socket.game = game;
+            selectHero(socket, gameName);
         });
-        this.on('select game', function(name){
+        socket.on('select game', function(name){
             if (name in games) {
-                this.socket.game = games[name];
-                selectHero(this.socket, name);
+                socket.game = games[name];
+                selectHero(socket, name);
             }
         });
-        this.on('initialize player', function(e){
-            this.socket.playerName = e.name;
+        socket.on('initialize player', function(e){
+            console.log("%$#$%#$%#$%$3");
+            socket.playerName = e.name;
             console.log("Player " + e.name + " connected");
-            this.emit("player initialized");
+            socket.emit("player initialized");
         });
-        this.on('get games', function(e){
+        socket.on('get games', function(e){
             var list = [];
             for(var name in games)
                 list.push({name: name});
-            this.emit("list of games", list);
+            socket.emit("list of games", list);
         });
-        this.on('select hero', function(heroName){
+        socket.on('select hero', function(heroName){
             console.log(socket.playerName, 'selecting', heroName + "!");
-            this.socket.game.selectHero(socket.playerName, heroName);
+            socket.game.selectHero(socket.playerName, heroName);
         });
     };
 

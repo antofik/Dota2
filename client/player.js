@@ -10,7 +10,7 @@ define([
             while (!player.name)
                 player.name = prompt('Enter your login');
             Storage.set('name', player.name);
-            Server.emit('initialize player', {name: name});
+            Server.emit('initialize player', {name: player.name});
         }
     };
     return player;

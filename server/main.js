@@ -8,7 +8,9 @@ define([
     WebServer.io.on('connection', function(socket){
         var user = new User();
         user.initialize(socket);
-        socket.on('disconnect', user.dispose);
+        socket.on('disconnect', function(){
+            user.dispose();
+        });
         user.serve();
     });
 });
